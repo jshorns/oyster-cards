@@ -3,6 +3,7 @@ require 'oystercard'
 describe Oystercard do
 	let (:max) { Oystercard::LIMIT }
 	let (:min) { Oystercard::MIN}
+	let (:station) { double :station }
 
 	describe '#initialize' do
 		it 'should have a default balance of zero' do
@@ -19,33 +20,34 @@ describe Oystercard do
 		end
 	end
 
-		describe '#in_journey?' do
-			it { is_expected.to respond_to(:in_journey?) }
+	describe '#in_journey?' do
+		it { is_expected.to respond_to(:in_journey?) }
 
-			it "initially isn't on a journey" do
+		it "initially isn't on a journey" do
 			expect(subject).not_to be_in_journey
 		end
+	end
+
+	describe '#touch_in' do
+		it 'prevents touch in' do
+			expect{ subject.touch_in(station) }.to raise_error "Balance not sufficient"
 		end
 
-		describe '#touch_in' do
-				it 'can touch in' do
-				subject.top_up(max)
-				subject.touch_in
-				expect(subject).to be_in_journey
-			end
-
-				it 'prevents touch in' do
-					expect{ subject.touch_in }.to raise_error "Balance not sufficient"
-				end
+		it 'stores the entry station' do
+			subject.top_up(max)
+			subject.touch_in(station)
+			expect(subject.entry_station).to eq station
 		end
 
-		describe '#touch_out' do
-			it 'can touch out' do
-				subject.top_up(max)
-				subject.touch_in
-				expect { subject.touch_out }.to change{ subject.balance }.by(- min)
-				subject.touch_out
-				expect(subject).not_to be_in_journey
-			end
+  end
+
+	describe '#touch_out' do
+		it 'can touch out' do
+			subject.top_up(max)
+			subject.touch_in(station)
+			expect { subject.touch_out }.to change{ subject.balance }.by(- min)
+			subject.touch_out
+			expect(subject.entry_station).not_to eq station
 		end
+	end
 end
