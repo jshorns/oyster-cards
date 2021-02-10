@@ -1,4 +1,5 @@
 require './lib/station'
+require './lib/journey'
 
 class Oystercard
 	LIMIT = 90
@@ -7,7 +8,8 @@ class Oystercard
 
 	def initialize
 		@balance = 0
-		@journeys = [{entry_station: [], exit_station: []} ]
+		@current_journey = Journey.new
+		@journeys = []
 	end
 
 	def top_up(amount)
@@ -21,12 +23,15 @@ class Oystercard
 
 	def touch_in(entry_station)
 		fail "Balance not sufficient" if @balance < MIN
-		@journeys.last[:entry_station] += [entry_station.name, entry_station.zone]
+		@current_journey.start_journey(entry_station)
+#		@journeys.last[:entry_station] += [entry_station.name, entry_station.zone]
 	end
 
 	def touch_out(exit_station)
-		@journeys.last[:exit_station] += [exit_station.name, exit_station.zone]
-		add_empty_journey
+		@current_journey.end_journey(exit_station)
+	#	@journeys.last[:exit_station] += [exit_station.name, exit_station.zone]
+		@journeys << @current_journey
+		@current_journey = Journey.new
 		deduct(MIN)
 	end
 
