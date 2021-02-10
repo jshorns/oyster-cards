@@ -3,11 +3,16 @@ require 'oystercard'
 describe Oystercard do
 	let (:max) { Oystercard::LIMIT }
 	let (:min) { Oystercard::MIN}
-	let (:station) { double :station }
+	let (:entry_station) { double :entry_station }
+	let (:exit_station) { double :exit_station}
 
 	describe '#initialize' do
 		it 'should have a default balance of zero' do
 			expect(subject.balance).to eq(0)
+		end
+
+		it 'has a list of empty journeys by default' do
+			expect(subject.journeys).to be_empty
 		end
 	end
 
@@ -30,13 +35,13 @@ describe Oystercard do
 
 	describe '#touch_in' do
 		it 'prevents touch in' do
-			expect{ subject.touch_in(station) }.to raise_error "Balance not sufficient"
+			expect{ subject.touch_in(entry_station) }.to raise_error "Balance not sufficient"
 		end
 
 		it 'stores the entry station' do
 			subject.top_up(max)
-			subject.touch_in(station)
-			expect(subject.entry_station).to eq station
+			subject.touch_in(entry_station)
+			expect(subject.entry_station).to eq entry_station
 		end
 
   end
@@ -44,10 +49,10 @@ describe Oystercard do
 	describe '#touch_out' do
 		it 'can touch out' do
 			subject.top_up(max)
-			subject.touch_in(station)
-			expect { subject.touch_out }.to change{ subject.balance }.by(- min)
-			subject.touch_out
-			expect(subject.entry_station).not_to eq station
+			subject.touch_in(entry_station)
+			expect { subject.touch_out(exit_station) }.to change{ subject.balance }.by(- min)
+			subject.touch_out(exit_station)
+			expect(subject.exit_station).to eq exit_station
 		end
 	end
 end
