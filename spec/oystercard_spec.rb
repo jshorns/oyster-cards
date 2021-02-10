@@ -3,8 +3,8 @@ require 'oystercard'
 describe Oystercard do
 	let (:max) { Oystercard::LIMIT }
 	let (:min) { Oystercard::MIN}
-	let (:entry_station) { double :entry_station }
-	let (:exit_station) { double :exit_station}
+	let (:entry_station) { double(:station, :name => "Brixton", :zone => "Zone 3") }
+	let (:exit_station) { double(:station, :name => "SevenSisters", :zone => "Zone 3") }
 
 	describe '#initialize' do
 		it 'should have a default balance of zero' do
@@ -12,7 +12,7 @@ describe Oystercard do
 		end
 
 		it 'has a list of empty journeys by default' do
-			expect(subject.journeys).to be_empty
+			expect(subject.journeys).to eq [{ entry_station: [], exit_station: [] } ]
 		end
 	end
 
@@ -41,7 +41,7 @@ describe Oystercard do
 		it 'stores the entry station' do
 			subject.top_up(max)
 			subject.touch_in(entry_station)
-			expect(subject.entry_station).to eq entry_station
+			expect(subject.journeys.last[:entry_station]).to eq [entry_station.name, entry_station.zone]
 		end
 
   end
@@ -50,9 +50,15 @@ describe Oystercard do
 		it 'can touch out' do
 			subject.top_up(max)
 			subject.touch_in(entry_station)
-			expect { subject.touch_out(exit_station) }.to change{ subject.balance }.by(- min)
+			expect { subject.touch_out(exit_station) }.to change{subject.balance}.by(- min)
 			subject.touch_out(exit_station)
-			expect(subject.exit_station).to eq exit_station
+			expect(subject.journeys).to include({entry_station: [entry_station.name, entry_station.zone], exit_station: [exit_station.name, exit_station.zone]})
+		end
+
+		it 'checks that touching in and out stores one journey' do
+			subject.top_up(max)
+			subject.touch_in(entry_station)
+			expect{ subject.touch_out(exit_station) }.to change { subject.journeys.length}.by(1)
 		end
 	end
 end
