@@ -21,12 +21,22 @@ class Oystercard
 		@journeys.last[:entry_station] != []
 	end
 
+	def incomplete_journey
+		if @current_journey.incomplete?
+			deduct(@current_journey.fare)
+			@journeys << @current_journey
+			@current_journey = Journey.new
+		end
+	end
+
 	def touch_in(entry_station)
 		fail "Balance not sufficient" if @balance < MIN
-		deduct(@current_journey.fare) if @current_journey.entry_station != []
+		incomplete_journey
 		@current_journey.start_journey(entry_station)
 #		@journeys.last[:entry_station] += [entry_station.name, entry_station.zone]
 	end
+
+
 
 	def touch_out(exit_station)
 		@current_journey.end_journey(exit_station)
