@@ -23,6 +23,7 @@ class Oystercard
 
 	def touch_in(entry_station)
 		fail "Balance not sufficient" if @balance < MIN
+		deduct(@current_journey.fare) if @current_journey.entry_station != []
 		@current_journey.start_journey(entry_station)
 #		@journeys.last[:entry_station] += [entry_station.name, entry_station.zone]
 	end
