@@ -27,7 +27,7 @@ describe OysterCard do
 
 		it "raises an error when limit is exceeded" do
 			subject.top_up(max)
-			expect{ subject.top_up 1 }.to raise_error("You cannot top up more than £#{max}")
+			expect{ subject.top_up 1 }.to raise_error("You cannot top up beyond £#{max}")
 		end
 	end
 
