@@ -3,7 +3,7 @@ require 'oystercard'
 describe Oystercard do
 	let (:max) { Oystercard::LIMIT }
 	let (:min) { Oystercard::MIN}
-	let (:entry_station) { double(:station, :name => "Brixton", :zone => "Zone 3") }
+	let (:entry_station) { double(:station, :name => "Brixton", :zone => "Zone 2") }
 	let (:exit_station) { double(:station, :name => "SevenSisters", :zone => "Zone 3") }
 
 	describe '#initialize' do
