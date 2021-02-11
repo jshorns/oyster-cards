@@ -1,10 +1,10 @@
 require './lib/station'
 require './lib/journey'
 
-class Oystercard
+class OysterCard
 	LIMIT = 90
 	MIN = 1
-	attr_reader :balance, :entry_station, :exit_station, :journeys, :current_journey
+	attr_reader :balance, :journeys, :current_journey
 
 	def initialize
 		@balance = 0
@@ -18,7 +18,7 @@ class Oystercard
 	end
 
 	def in_journey?
-		@journeys.last[:entry_station] != []
+		@current_journey.incomplete?
 	end
 
 	def incomplete_journey

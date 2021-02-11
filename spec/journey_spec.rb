@@ -1,7 +1,7 @@
 require 'journey'
 
 describe Journey do
-  let (:max_fare) { Journey::MAX_FARE }
+  let (:max_fare) { Journey::PENALTY_FARE }
   let (:min_fare) { Journey::MIN_FARE }
   let (:station) { double(:station, :name => "Brixton", :zone => "Zone 2") }
   let (:station2) { double(:station, :name => "Seven Sisters", :zone => "Zone 3") }

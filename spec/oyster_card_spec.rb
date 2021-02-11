@@ -1,8 +1,12 @@
-require 'oystercard'
+require 'oyster_card'
+require 'journey'
 
-describe Oystercard do
-	let (:max) { Oystercard::LIMIT }
-	let (:min) { Oystercard::MIN}
+describe OysterCard do
+	#edge case to be aware of; if the user touches in and touches out at the same station.
+	let (:max) { OysterCard::LIMIT }
+	let (:min) { OysterCard::MIN}
+	let (:penalty_fare) { Journey::PENALTY_FARE }
+	let (:test_balance) { 10 }
 	let (:entry_station) { double(:station, :name => "Brixton", :zone => "Zone 2") }
 	let (:exit_station) { double(:station, :name => "SevenSisters", :zone => "Zone 3") }
 
@@ -10,9 +14,11 @@ describe Oystercard do
 		it 'should have a default balance of zero' do
 			expect(subject.balance).to eq(0)
 		end
-
-		it 'has a list of empty journeys by default' do
-			expect(subject.journeys).to eq [{ entry_station: [], exit_station: [] } ]
+		it 'should have no journey history' do
+			expect(subject.journeys).to eq []
+		end
+		it 'should have an empty journey as the current_journey' do
+			expect(subject.current_journey).to be_instance_of Journey
 		end
 	end
 
@@ -34,31 +40,73 @@ describe Oystercard do
 	end
 
 	describe '#touch_in' do
-		it 'prevents touch in' do
-			expect{ subject.touch_in(entry_station) }.to raise_error "Balance not sufficient"
+		context 'card has balance of 0' do
+			it 'prevents touch in when card has below MIN' do
+				expect{ subject.touch_in(entry_station) }.to raise_error "Balance not sufficient"
+			end
 		end
-
-		it 'stores the entry station' do
-			subject.top_up(max)
-			subject.touch_in(entry_station)
-			expect(subject.journeys.last[:entry_station]).to eq [entry_station.name, entry_station.zone]
+		context 'card has been topped up with test_balance' do
+			before(:each) { subject.top_up(test_balance) }
+			it 'has stored the entry station' do
+				expect { subject.touch_in(entry_station) }.to change { subject.current_journey.entry_station }.to [entry_station.name, entry_station.zone]
+			end
+			context 'card was already touched_in once, aka never touched out' do
+				before(:each) { subject.touch_in(entry_station) }
+				it 'user is charged penalty fare for never touching out' do
+					expect { subject.touch_in(exit_station) }.to change(subject, :balance).by -penalty_fare
+				end
+				it 'current_journey now contains the new journey with station as start' do
+					expect { subject.touch_in(exit_station) }.to change { subject.current_journey.entry_station }.to [exit_station.name, exit_station.zone]
+				end
+				it 'touching in stores the previously incomplete journey to journey history' do
+					expect { subject.touch_in(exit_station) }.to change { subject.journeys.length }.by 1
+				end
+				it 'stored journey shows as incomplete' do
+					subject.touch_in(exit_station)
+					expect(subject.journeys.last.entry_station).to eq [entry_station.name, entry_station.zone]
+					expect(subject.journeys.last.exit_station).to eq []
+				end
+			end
 		end
-
-  end
+	end
 
 	describe '#touch_out' do
-		it 'can touch out' do
-			subject.top_up(max)
-			subject.touch_in(entry_station)
-			expect { subject.touch_out(exit_station) }.to change{subject.balance}.by(- min)
-			subject.touch_out(exit_station)
-			expect(subject.journeys).to include({entry_station: [entry_station.name, entry_station.zone], exit_station: [exit_station.name, exit_station.zone]})
+		context 'card has balance of test_balance and was previously touched in' do
+			before(:each) do
+				subject.top_up(test_balance)
+				subject.touch_in(entry_station)
+			end
+			it 'stores completed journey to journey history' do
+				expect { subject.touch_out(exit_station) }.to change { subject.journeys.length }.by 1
+			end
+			it 'deducts minimum charge from card balance' do
+				expect { subject.touch_out(exit_station) }.to change(subject, :balance).by -min
+			end
+			it 'changes value of @current_journey to a new journey' do
+				subject.touch_out(exit_station)
+				expect(subject.current_journey.entry_station).to eq []
+				expect(subject.current_journey.exit_station).to eq []
+			end
 		end
-
-		it 'checks that touching in and out stores one journey' do
-			subject.top_up(max)
-			subject.touch_in(entry_station)
-			expect{ subject.touch_out(exit_station) }.to change { subject.journeys.length}.by(1)
+		context 'card has balance of test_balance but had not previously been touched in' do
+			before(:each) do
+				subject.top_up(test_balance)
+			end
+			it 'adds journey to journey history' do
+				expect { subject.touch_out(exit_station) }.to change { subject.journeys.length }.by 1
+			end
+			it 'stored journey shows as incomplete' do
+				subject.touch_out(exit_station)
+				expect(subject.journeys.last.entry_station).to eq []
+				expect(subject.journeys.last.exit_station).to eq [exit_station.name, exit_station.zone]
+			end
+			it 'deducts penalty fare from card balance' do
+				expect { subject.touch_out(exit_station) }.to change(subject, :balance).by -penalty_fare
+			end
+			it 'changes value of @current_journey to a new journey' do
+				subject.touch_out(exit_station)
+				expect(subject.current_journey.entry_station).to eq []
+			end
 		end
 	end
 end
